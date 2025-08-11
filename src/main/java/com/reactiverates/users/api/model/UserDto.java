@@ -1,43 +1,69 @@
 package com.reactiverates.users.api.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import com.reactiverates.users.domain.model.User;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
-import com.reactiverates.users.domain.model.User;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class UserDto {
-    private Long id;
-    private String username;
-    private String email;
-    private String firstName;
-    private String lastName;
-    private String phoneNumber;
-    private User.UserRole role;
-    private Boolean isActive;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+@Schema(description = "DTO пользователя")
+public record UserDto(
+    @Schema(description = "Уникальный идентификатор пользователя", example = "1")
+    Long id,
     
-    public static UserDto fromUser(User user) {
-        UserDto dto = UserDto.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .phoneNumber(user.getPhoneNumber())
-                .role(user.getRole())
-                .isActive(user.getIsActive())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
+    @Schema(description = "Имя пользователя", example = "john_doe")
+    String username,
+    
+    @Schema(description = "Email пользователя", example = "john@example.com")
+    String email,
+    
+    @Schema(description = "Имя", example = "John")
+    String firstName,
+    
+    @Schema(description = "Фамилия", example = "Doe")
+    String lastName,
+    
+    @Schema(description = "Номер телефона", example = "+7 (999) 123-45-67")
+    String phoneNumber,
+    
+    @Schema(description = "Роль пользователя", example = "USER")
+    User.UserRole role,
+    
+    @Schema(description = "Статус активности", example = "true")
+    Boolean isActive,
+    
+    @Schema(description = "Дата создания", example = "2024-01-01T10:00:00")
+    LocalDateTime createdAt,
+    
+    @Schema(description = "Дата последнего обновления", example = "2024-01-01T10:00:00")
+    LocalDateTime updatedAt
+) {
+    
+    public static UserDto fromDomain(User user) {
+        return new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPhoneNumber(),
+                user.getRole(),
+                user.getIsActive(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
+    }
+    
+    public User toDomain() {
+        return User.builder()
+                .id(id)
+                .username(username)
+                .email(email)
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(phoneNumber)
+                .role(role)
+                .isActive(isActive)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
                 .build();
-        return dto;
     }
 }

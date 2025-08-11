@@ -6,8 +6,10 @@ import com.reactiverates.users.api.model.UserDto;
 import com.reactiverates.users.domain.model.User;
 import com.reactiverates.users.domain.service.UsersService;
 import com.reactiverates.users.infrastructure.persistence.repository.UsersRepository;
+import com.reactiverates.users.infrastructure.persistence.entity.UserEntity;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,121 +26,133 @@ public class DefaultUsersService implements UsersService {
     private final UsersRepository repository;
     private final PasswordEncoder passwordEncoder;
     
+    @Override
     public List<UserDto> getAllUsers() {
         return repository.findAll().stream()
-                .map(UserDto::fromUser)
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain)
                 .collect(Collectors.toList());
     }
     
     @Override
     public Optional<UserDto> getUserById(Long id) {
         return repository.findById(id)
-                .map(UserDto::fromUser);
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain);
     }
     
     @Override
     public Optional<UserDto> getUserByUsername(String username) {
         return repository.findByUsername(username)
-                .map(UserDto::fromUser);
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain);
     }
     
     @Override
     public Optional<UserDto> getUserByEmail(String email) {
         return repository.findByEmail(email)
-                .map(UserDto::fromUser);
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain);
     }
     
     @Override
     public List<UserDto> getUsersByRole(User.UserRole role) {
         return repository.findByRole(role).stream()
-                .map(UserDto::fromUser)
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain)
                 .collect(Collectors.toList());
     }
     
     @Override
     public List<UserDto> getActiveUsers() {
         return repository.findByIsActive(true).stream()
-                .map(UserDto::fromUser)
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain)
                 .collect(Collectors.toList());
     }
     
     @Override
     public List<UserDto> searchUsers(String searchTerm) {
         return repository.findBySearchTerm(searchTerm).stream()
-                .map(UserDto::fromUser)
+                .map(UserEntity::toDomain)
+                .map(UserDto::fromDomain)
                 .collect(Collectors.toList());
     }
     
     @Override
     public UserDto createUser(CreateUserRequest request) {
         // Проверяем уникальность username и email
-        if (repository.existsByUsername(request.getUsername())) {
+        if (repository.existsByUsername(request.username())) {
             throw new RuntimeException("Пользователь с таким именем уже существует");
         }
         
-        if (repository.existsByEmail(request.getEmail())) {
+        if (repository.existsByEmail(request.email())) {
             throw new RuntimeException("Пользователь с таким email уже существует");
         }
         
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .phoneNumber(request.getPhoneNumber())
-                .role(request.getRole())
+                .username(request.username())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .phoneNumber(request.phoneNumber())
+                .role(request.role())
                 .isActive(true)
                 .build();
         
-        User savedUser = repository.save(user);
-        return UserDto.fromUser(savedUser);
+        UserEntity userEntity = UserEntity.fromDomain(user);
+        UserEntity savedEntity = repository.save(userEntity);
+        return UserDto.fromDomain(savedEntity.toDomain());
     }
     
     @Override
     public Optional<UserDto> updateUser(Long id, UpdateUserRequest request) {
         return repository.findById(id)
-                .map(user -> {
-                    if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
-                        if (repository.existsByUsername(request.getUsername())) {
+                .map(userEntity -> {
+                    User user = userEntity.toDomain();
+                    
+                    if (request.username() != null && !request.username().equals(user.getUsername())) {
+                        if (repository.existsByUsername(request.username())) {
                             throw new RuntimeException("Пользователь с таким именем уже существует");
                         }
-                        user.setUsername(request.getUsername());
+                        user.setUsername(request.username());
                     }
                     
-                    if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
-                        if (repository.existsByEmail(request.getEmail())) {
+                    if (request.email() != null && !request.email().equals(user.getEmail())) {
+                        if (repository.existsByEmail(request.email())) {
                             throw new RuntimeException("Пользователь с таким email уже существует");
                         }
-                        user.setEmail(request.getEmail());
+                        user.setEmail(request.email());
                     }
                     
-                    if (request.getPassword() != null) {
-                        user.setPassword(passwordEncoder.encode(request.getPassword()));
+                    if (request.password() != null) {
+                        user.setPassword(passwordEncoder.encode(request.password()));
                     }
                     
-                    if (request.getFirstName() != null) {
-                        user.setFirstName(request.getFirstName());
+                    if (request.firstName() != null) {
+                        user.setFirstName(request.firstName());
                     }
                     
-                    if (request.getLastName() != null) {
-                        user.setLastName(request.getLastName());
+                    if (request.lastName() != null) {
+                        user.setLastName(request.lastName());
                     }
                     
-                    if (request.getPhoneNumber() != null) {
-                        user.setPhoneNumber(request.getPhoneNumber());
+                    if (request.phoneNumber() != null) {
+                        user.setPhoneNumber(request.phoneNumber());
                     }
                     
-                    if (request.getRole() != null) {
-                        user.setRole(request.getRole());
+                    if (request.role() != null) {
+                        user.setRole(request.role());
                     }
                     
-                    if (request.getIsActive() != null) {
-                        user.setIsActive(request.getIsActive());
+                    if (request.isActive() != null) {
+                        user.setIsActive(request.isActive());
                     }
                     
-                    User savedUser = repository.save(user);
-                    return UserDto.fromUser(savedUser);
+                    UserEntity updatedEntity = UserEntity.fromDomain(user);
+                    UserEntity savedEntity = repository.save(updatedEntity);
+                    return UserDto.fromDomain(savedEntity.toDomain());
                 });
     }
     
@@ -154,9 +168,11 @@ public class DefaultUsersService implements UsersService {
     @Override
     public boolean deactivateUser(Long id) {
         return repository.findById(id)
-                .map(user -> {
+                .map(userEntity -> {
+                    User user = userEntity.toDomain();
                     user.setIsActive(false);
-                    repository.save(user);
+                    UserEntity updatedEntity = UserEntity.fromDomain(user);
+                    repository.save(updatedEntity);
                     return true;
                 })
                 .orElse(false);
@@ -165,9 +181,11 @@ public class DefaultUsersService implements UsersService {
     @Override
     public boolean activateUser(Long id) {
         return repository.findById(id)
-                .map(user -> {
+                .map(userEntity -> {
+                    User user = userEntity.toDomain();
                     user.setIsActive(true);
-                    repository.save(user);
+                    UserEntity updatedEntity = UserEntity.fromDomain(user);
+                    repository.save(updatedEntity);
                     return true;
                 })
                 .orElse(false);

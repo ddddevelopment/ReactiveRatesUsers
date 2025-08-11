@@ -23,8 +23,17 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authz -> authz
+                // Swagger UI и OpenAPI документация - все возможные пути
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/api-docs.yaml").permitAll()
+                .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
+                .requestMatchers("/swagger-config", "/api-docs/swagger-config").permitAll()
+                // API endpoints
                 .requestMatchers("/api/**").permitAll()
-                .anyRequest().authenticated()
+                // H2 Console для разработки
+                .requestMatchers("/h2-console/**").permitAll()
+                // Разрешаем все остальные запросы для разработки
+                .anyRequest().permitAll()
             );
         
         return http.build();
