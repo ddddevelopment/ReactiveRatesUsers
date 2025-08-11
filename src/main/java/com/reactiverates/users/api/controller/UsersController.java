@@ -1,9 +1,9 @@
 package com.reactiverates.users.api.controller;
 
-import com.reactiverates.users.api.model.CreateUserRequest;
-import com.reactiverates.users.api.model.UpdateUserRequest;
-import com.reactiverates.users.api.model.UserDto;
+import com.reactiverates.users.domain.model.CreateUserRequest;
+import com.reactiverates.users.domain.model.UpdateUserRequest;
 import com.reactiverates.users.domain.model.User;
+import com.reactiverates.users.domain.model.UserDto;
 import com.reactiverates.users.domain.service.UsersService;
 
 import io.swagger.v3.oas.annotations.Operation;

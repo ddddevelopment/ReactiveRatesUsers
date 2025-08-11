@@ -1,6 +1,5 @@
-package com.reactiverates.users.api.model;
+package com.reactiverates.users.domain.model;
 
-import com.reactiverates.users.domain.model.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;

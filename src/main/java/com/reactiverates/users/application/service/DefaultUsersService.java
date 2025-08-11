@@ -1,9 +1,9 @@
 package com.reactiverates.users.application.service;
 
-import com.reactiverates.users.api.model.CreateUserRequest;
-import com.reactiverates.users.api.model.UpdateUserRequest;
-import com.reactiverates.users.api.model.UserDto;
+import com.reactiverates.users.domain.model.CreateUserRequest;
+import com.reactiverates.users.domain.model.UpdateUserRequest;
 import com.reactiverates.users.domain.model.User;
+import com.reactiverates.users.domain.model.UserDto;
 import com.reactiverates.users.domain.service.UsersService;
 import com.reactiverates.users.infrastructure.persistence.repository.UsersRepository;
 import com.reactiverates.users.infrastructure.persistence.entity.UserEntity;
