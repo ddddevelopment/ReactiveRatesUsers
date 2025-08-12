@@ -33,7 +33,10 @@ public record UserDto(
     LocalDateTime createdAt,
     
     @Schema(description = "Дата последнего обновления", example = "2024-01-01T10:00:00")
-    LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+    
+    @Schema(description = "Хеш пароля пользователя")
+    String passwordHash
 ) {
     
     public static UserDto fromDomain(User user) {
@@ -47,7 +50,8 @@ public record UserDto(
                 user.getRole(),
                 user.getIsActive(),
                 user.getCreatedAt(),
-                user.getUpdatedAt()
+                user.getUpdatedAt(),
+                user.getPassword()
         );
     }
     
@@ -63,6 +67,7 @@ public record UserDto(
                 .isActive(isActive)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
+                .password(passwordHash)
                 .build();
     }
 }

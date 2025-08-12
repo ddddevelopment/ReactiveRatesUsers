@@ -15,7 +15,6 @@ import com.reactiverates.users.grpc.UserResponse;
 import com.reactiverates.users.grpc.UserRole;
 import com.reactiverates.users.grpc.UsersServiceGrpc.UsersServiceImplBase;
 
-import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
 @GrpcService
@@ -51,10 +50,10 @@ public class UsersGrpcService extends UsersServiceImplBase {
 
         if (user.isPresent()) {
             responseObserver.onNext(toUserResponse(user.get()));
-            responseObserver.onCompleted();
         } else {
-            responseObserver.onError(Status.NOT_FOUND.withDescription("User not found").asRuntimeException());
+            responseObserver.onNext(toUserNotFoundResponse("User with ID " + request.getUserId() + " not found"));
         }
+        responseObserver.onCompleted();
     }
 
     @Override
@@ -63,10 +62,10 @@ public class UsersGrpcService extends UsersServiceImplBase {
 
         if (user.isPresent()) {
             responseObserver.onNext(toUserResponse(user.get()));
-            responseObserver.onCompleted();
         } else {
-            responseObserver.onError(Status.NOT_FOUND.withDescription("User not found").asRuntimeException());
+            responseObserver.onNext(toUserNotFoundResponse("User with username '" + request.getUsername() + "' not found"));
         }
+        responseObserver.onCompleted();
     }
 
     private User.UserRole convertToDomainRole(com.reactiverates.users.grpc.UserRole role) {
@@ -90,6 +89,9 @@ public class UsersGrpcService extends UsersServiceImplBase {
                 .setCreatedAt(u.createdAt() != null ? u.createdAt().format(ISO) : "")
                 .setUpdatedAt(u.updatedAt() != null ? u.updatedAt().format(ISO) : "")
                 .setFullName(buildFullName(u))
+                .setPasswordHash(u.passwordHash() != null ? u.passwordHash() : "")
+                .setFound(true)
+                .setMessage("User found")
                 .build();
     }
 
@@ -101,6 +103,25 @@ public class UsersGrpcService extends UsersServiceImplBase {
         if (u.lastName() != null)
             return u.lastName();
         return u.username();
+    }
+
+    private UserResponse toUserNotFoundResponse(String message) {
+        return UserResponse.newBuilder()
+                .setId(0)
+                .setUsername("")
+                .setEmail("")
+                .setFirstName("")
+                .setLastName("")
+                .setPhoneNumber("")
+                .setRole(UserRole.USER)
+                .setIsActive(false)
+                .setCreatedAt("")
+                .setUpdatedAt("")
+                .setFullName("")
+                .setPasswordHash("")
+                .setFound(false)
+                .setMessage(message)
+                .build();
     }
 
     private UserRole convertToGrpcRole(User.UserRole role) {
