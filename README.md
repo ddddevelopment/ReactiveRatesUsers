@@ -1,275 +1,228 @@
-# CRUD Приложение для Управления Пользователями
+# Микросервис управления пользователями
 
-Это Spring Boot приложение для управления пользователями с полным CRUD функционалом.
+Микросервис для управления пользователями в системе Reactive Rates с поддержкой JWT аутентификации.
+
+## Возможности
+
+- CRUD операции с пользователями
+- JWT аутентификация и авторизация
+- gRPC API
+- REST API с Swagger документацией
+- Поддержка ролей пользователей (ADMIN, USER)
 
 ## Технологии
 
-- **Spring Boot 3.5.4**
-- **Spring Data JPA**
-- **Spring Security**
-- **H2 Database** (для разработки)
-- **PostgreSQL** (для продакшена)
-- **Lombok**
-- **Maven**
+- Spring Boot 3.5.4
+- Spring Security с JWT
+- Spring Data JPA
+- H2 Database (для разработки)
+- PostgreSQL (для продакшена)
+- gRPC
+- Swagger/OpenAPI 3
 
-## Запуск приложения
+## Быстрый старт
+
+### Предварительные требования
+
+- Java 21
+- Maven 3.6+
+
+### Запуск
 
 1. Клонируйте репозиторий
-2. Убедитесь, что у вас установлена Java 21
+2. Перейдите в директорию проекта
 3. Запустите приложение:
-   ```bash
-   mvn spring-boot:run
-   ```
 
-Приложение будет доступно по адресу: `http://localhost:8080`
-
-## База данных
-
-### H2 Console (для разработки)
-- URL: `http://localhost:8080/h2-console`
-- JDBC URL: `jdbc:h2:mem:testdb`
-- Username: `sa`
-- Password: `password`
-
-### Тестовые пользователи
-При первом запуске автоматически создаются тестовые пользователи:
-- **admin/admin123** (Администратор)
-- **user/user123** (Пользователь)
-- **moderator/mod123** (Модератор)
-
-## API Endpoints
-
-### Получение пользователей
-
-#### Получить всех пользователей
-```
-GET /api/users
+```bash
+./mvnw spring-boot:run
 ```
 
-#### Получить пользователя по ID
-```
-GET /api/users/{id}
+Приложение будет доступно по адресу: http://localhost:8080
+
+### Swagger UI
+
+Документация API доступна по адресу: http://localhost:8080/swagger-ui.html
+
+## JWT Аутентификация
+
+### Конфигурация
+
+Настройки JWT находятся в `application.properties`:
+
+```properties
+jwt.secret=your-super-secret-jwt-key-that-should-be-at-least-256-bits-long-for-production
+jwt.expiration=86400000
 ```
 
-#### Получить пользователя по имени пользователя
-```
-GET /api/users/username/{username}
-```
+**Важно**: В продакшене обязательно замените `jwt.secret` на безопасный ключ длиной не менее 256 бит.
 
-#### Получить пользователя по email
-```
-GET /api/users/email/{email}
-```
+### Структура JWT токена
 
-#### Получить пользователей по роли
-```
-GET /api/users/role/{role}
-```
-Роли: `ADMIN`, `USER`, `MODERATOR`
+JWT токен должен содержать следующие claims:
 
-#### Получить активных пользователей
-```
-GET /api/users/active
-```
-
-#### Поиск пользователей
-```
-GET /api/users/search?q={searchTerm}
-```
-
-### Создание пользователя
-
-```
-POST /api/users
-Content-Type: application/json
-
+```json
 {
-  "username": "newuser",
-  "email": "newuser@example.com",
-  "password": "password123",
-  "firstName": "Имя",
-  "lastName": "Фамилия",
-  "phoneNumber": "+7-999-123-45-67",
-  "role": "USER"
+  "type": "access",
+  "roles": ["USER", "ADMIN"],
+  "sub": "username",
+  "iat": 1234567890,
+  "exp": 1234567890
 }
 ```
 
-### Обновление пользователя
+- `type` - тип токена (обычно "access")
+- `roles` - массив строк с ролями пользователя
+- `sub` - имя пользователя
+- `exp` - время истечения токена
+- `iat` - время создания токена
+
+**Поддерживаемые роли:**
+- `USER` - обычный пользователь
+- `ADMIN` - администратор (доступ ко всем endpoints)
+- `MODERATOR` - модератор
+
+### Доступ к endpoints
+
+#### Публичные endpoints (доступны всем)
+
+- `GET /api/users` - получить всех пользователей
+- `GET /api/users/{id}` - получить пользователя по ID
+- `GET /api/users/username/{username}` - получить пользователя по username
+- `GET /api/users/email/{email}` - получить пользователя по email
+- `GET /api/users/role/{role}` - получить пользователей по роли
+- `GET /api/users/active` - получить активных пользователей
+- `GET /api/users/search?q={query}` - поиск пользователей
+- `POST /api/users` - создать нового пользователя
+
+#### Административные endpoints (требуют роль ADMIN)
+
+- `PUT /api/users/{id}` - обновить пользователя
+- `DELETE /api/users/{id}` - удалить пользователя
+- `PATCH /api/users/{id}/deactivate` - деактивировать пользователя
+- `PATCH /api/users/{id}/activate` - активировать пользователя
+
+### Использование
+
+Добавьте JWT токен в заголовок `Authorization`:
 
 ```
-PUT /api/users/{id}
-Content-Type: application/json
-
-{
-  "username": "updateduser",
-  "email": "updated@example.com",
-  "firstName": "Обновленное имя",
-  "lastName": "Обновленная фамилия",
-  "role": "MODERATOR",
-  "isActive": true
-}
+Authorization: Bearer <your-jwt-token>
 ```
 
-### Удаление пользователя
+#### Примеры запросов
 
-```
-DELETE /api/users/{id}
-```
-
-### Активация/деактивация пользователя
-
-```
-PATCH /api/users/{id}/activate
-PATCH /api/users/{id}/deactivate
+Публичный запрос (не требует токена):
+```bash
+curl -X GET http://localhost:8080/api/users
 ```
 
-## Модель данных
-
-### User
-```java
-{
-  "id": 1,
-  "username": "user",
-  "email": "user@example.com",
-  "firstName": "Иван",
-  "lastName": "Иванов",
-  "phoneNumber": "+7-999-123-45-67",
-  "role": "USER",
-  "isActive": true,
-  "createdAt": "2024-01-01T10:00:00",
-  "updatedAt": "2024-01-01T10:00:00"
-}
+Административный запрос (требует токен с ролью ADMIN):
+```bash
+curl -X PUT http://localhost:8080/api/users/1 \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "updated_user",
+    "email": "updated@example.com",
+    "firstName": "Updated",
+    "lastName": "User"
+  }'
 ```
 
-### Роли пользователей
-- **ADMIN** - Администратор системы
-- **USER** - Обычный пользователь
-- **MODERATOR** - Модератор
+### Примеры JWT токенов для тестирования
 
-## Валидация
+Для тестирования можно использовать следующие примеры токенов (созданные с тем же секретным ключом):
 
-Приложение включает валидацию данных:
-- Username: 3-50 символов, уникальный
-- Email: корректный формат, уникальный
-- Password: минимум 6 символов
-- Обязательные поля: username, email, password
+**Токен для пользователя с ролью USER:**
+```
+eyJhbGciOiJIUzI1NiJ9.eyJ0eXBlIjoiYWNjZXNzIiwicm9sZXMiOlsiVVNFUiJdLCJzdWIiOiJqb2huX2RvZSIsImlhdCI6MTczNDQ5NzQ0NCwiZXhwIjoxNzM0NTAxMDQ0fQ.example_signature
+```
 
-## Безопасность
+**Токен для администратора с ролью ADMIN:**
+```
+eyJhbGciOiJIUzI1NiJ9.eyJ0eXBlIjoiYWNjZXNzIiwicm9sZXMiOlsiQURNSU4iXSwic3ViIjoiYWRtaW4iLCJpYXQiOjE3MzQ0OTc0NDQsImV4cCI6MTczNDUwMTA0NH0.example_signature
+```
 
-- Пароли хешируются с помощью BCrypt
-- CSRF защита отключена для API
-- Все API endpoints доступны без аутентификации (для демонстрации)
+**Пример curl с токеном:**
+```bash
+# Получить всех пользователей (публичный endpoint)
+curl -X GET http://localhost:8080/api/users
 
-## Архитектура
+# Обновить пользователя (требует роль ADMIN)
+curl -X PUT http://localhost:8080/api/users/1 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJ0eXBlIjoiYWNjZXNzIiwicm9sZXMiOlsiQURNSU4iXSwic3ViIjoiYWRtaW4iLCJpYXQiOjE3MzQ0OTc0NDQsImV4cCI6MTczNDUwMTA0NH0.example_signature" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "updated_user",
+    "email": "updated@example.com",
+    "firstName": "Updated",
+    "lastName": "User"
+  }'
+```
 
-Приложение использует **Domain-Driven Design (DDD)** архитектуру с четким разделением слоев:
+## Интеграция с внешним микросервисом аутентификации
 
-### Слои архитектуры:
+Убедитесь, что ваш внешний микросервис аутентификации:
 
-1. **Domain Layer** - доменная модель и бизнес-логика
-   - `domain/model/User.java` - доменная модель пользователя
-   - `domain/service/UserDomainService.java` - доменные сервисы
-   - `domain/repository/UserRepository.java` - интерфейс репозитория
-   - `domain/exception/` - доменные исключения
+1. Использует тот же секретный ключ для подписи JWT токенов
+2. Включает роли пользователя в claims токена
+3. Устанавливает корректное время истечения токена
 
-2. **Infrastructure Layer** - инфраструктурный слой
-   - `infrastructure/persistence/entity/UserEntity.java` - JPA Entity
-   - `infrastructure/persistence/repository/UserJpaRepository.java` - JPA репозиторий
-   - `infrastructure/persistence/repository/UserRepositoryImpl.java` - реализация доменного репозитория
-   - `infrastructure/config/` - конфигурации
+## Тестирование
 
-3. **Application Layer** - прикладной слой
-   - `application/service/UserApplicationService.java` - прикладные сервисы
+Запуск тестов:
 
-4. **API Layer** - слой представления
-   - `api/controller/UserController.java` - REST контроллеры
-   - `api/exception/GlobalExceptionHandler.java` - обработка исключений
+```bash
+./mvnw test
+```
 
-5. **DTO Layer** - объекты передачи данных
-   - `dto/UserDto.java` - DTO для пользователя
-   - `dto/CreateUserRequest.java` - DTO для создания
-   - `dto/UpdateUserRequest.java` - DTO для обновления
+Запуск конкретного теста:
 
-### Преимущества архитектуры:
-
-- **Разделение ответственности** - каждый слой имеет свою зону ответственности
-- **Независимость домена** - доменная модель не зависит от фреймворков
-- **Тестируемость** - легко тестировать каждый слой отдельно
-- **Гибкость** - можно легко заменить реализацию репозитория
-- **Масштабируемость** - легко добавлять новые функции
+```bash
+./mvnw test -Dtest=JwtServiceTest
+```
 
 ## Структура проекта
 
 ```
-src/main/java/com/reactiverates/users/
-├── api/
-│   ├── controller/
-│   │   └── UserController.java
-│   └── exception/
-│       └── GlobalExceptionHandler.java
-├── application/
-│   └── service/
-│       └── UserApplicationService.java
-├── domain/
-│   ├── exception/
-│   │   ├── UserNotFoundException.java
-│   │   └── UserAlreadyExistsException.java
-│   ├── model/
-│   │   └── User.java
-│   ├── repository/
-│   │   └── UserRepository.java
-│   └── service/
-│       └── UserDomainService.java
-├── dto/
-│   ├── CreateUserRequest.java
-│   ├── UpdateUserRequest.java
-│   └── UserDto.java
-└── infrastructure/
-    ├── config/
-    │   ├── DataInitializer.java
-    │   └── SecurityConfig.java
-    └── persistence/
-        ├── entity/
-        │   └── UserEntity.java
-        └── repository/
-            ├── UserJpaRepository.java
-            └── UserRepositoryImpl.java
+src/
+├── main/
+│   ├── java/com/reactiverates/users/
+│   │   ├── api/controller/          # REST контроллеры
+│   │   ├── application/service/     # Сервисы приложения
+│   │   ├── domain/                  # Доменная модель
+│   │   │   ├── model/              # Модели данных
+│   │   │   ├── service/            # Доменные сервисы
+│   │   │   └── exception/          # Доменные исключения
+│   │   └── infrastructure/         # Инфраструктурный слой
+│   │       ├── config/             # Конфигурации
+│   │       ├── security/           # JWT аутентификация
+│   │       ├── persistence/        # Репозитории и сущности
+│   │       └── grpc/               # gRPC сервисы
+│   ├── proto/                      # Protocol Buffers файлы
+│   └── resources/                  # Конфигурационные файлы
+└── test/                           # Тесты
 ```
 
-## Тестирование
+## Безопасность
 
-Для тестирования API можно использовать:
-- Postman
-- curl
-- H2 Console для просмотра базы данных
+1. **Секретный ключ**: Используйте криптографически стойкий секретный ключ в продакшене
+2. **HTTPS**: Всегда используйте HTTPS в продакшене
+3. **Время жизни токена**: Настройте разумное время жизни токена
+4. **Валидация**: Токены проверяются на валидность и время жизни
 
-### Примеры curl команд
+## Обработка ошибок
 
-```bash
-# Получить всех пользователей
-curl -X GET http://localhost:8080/api/users
+### 401 Unauthorized
+Возвращается когда:
+- JWT токен отсутствует
+- JWT токен недействителен
+- JWT токен истек
 
-# Создать пользователя
-curl -X POST http://localhost:8080/api/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "password123",
-    "firstName": "Тест",
-    "lastName": "Пользователь"
-  }'
+### 403 Forbidden
+Возвращается когда:
+- У пользователя недостаточно прав для доступа к endpoint
 
-# Получить пользователя по ID
-curl -X GET http://localhost:8080/api/users/1
+## Лицензия
 
-# Обновить пользователя
-curl -X PUT http://localhost:8080/api/users/1 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Обновленное имя"
-  }'
-
-# Удалить пользователя
-curl -X DELETE http://localhost:8080/api/users/1
-```
+Этот проект является частью системы Reactive Rates.
