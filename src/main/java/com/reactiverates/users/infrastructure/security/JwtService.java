@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -28,15 +29,62 @@ public class JwtService {
     public List<String> extractRoles(String token) {
         try {
             Claims claims = extractAllClaims(token);
-            List<String> roles = claims.get("roles", List.class);
             
-            if (roles != null) {
+            // Сначала пробуем извлечь roles
+            List<String> roles = claims.get("roles", List.class);
+            if (roles != null && !roles.isEmpty()) {
                 return roles;
+            }
+            
+            // Если roles нет, пробуем извлечь authorities
+            List<String> authorities = claims.get("authorities", List.class);
+            if (authorities != null && !authorities.isEmpty()) {
+                // Убираем префикс ROLE_ если он есть
+                return authorities.stream()
+                        .map(auth -> auth.startsWith("ROLE_") ? auth.substring(5) : auth)
+                        .collect(Collectors.toList());
+            }
+            
+            // Если и authorities нет, пробуем извлечь role (единственную роль)
+            String role = claims.get("role", String.class);
+            if (role != null) {
+                return List.of(role);
             }
             
             return List.of();
         } catch (Exception e) {
             log.error("Error extracting roles from JWT token: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    public List<String> extractAuthorities(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            
+            // Сначала пробуем извлечь authorities
+            List<String> authorities = claims.get("authorities", List.class);
+            if (authorities != null && !authorities.isEmpty()) {
+                return authorities;
+            }
+            
+            // Если authorities нет, пробуем извлечь roles и добавить префикс ROLE_
+            List<String> roles = claims.get("roles", List.class);
+            if (roles != null && !roles.isEmpty()) {
+                return roles.stream()
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                        .collect(Collectors.toList());
+            }
+            
+            // Если и roles нет, пробуем извлечь role (единственную роль)
+            String role = claims.get("role", String.class);
+            if (role != null) {
+                return List.of(role.startsWith("ROLE_") ? role : "ROLE_" + role);
+            }
+            
+            return List.of();
+        } catch (Exception e) {
+            log.error("Error extracting authorities from JWT token: {}", e.getMessage());
             return List.of();
         }
     }

@@ -29,31 +29,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+        log.debug("Processing request: {} {}", method, requestURI);
+        
         try {
             String token = extractTokenFromRequest(request);
             
-            if (StringUtils.hasText(token) && jwtService.validateToken(token)) {
-                String username = jwtService.extractUsername(token);
-                List<String> roles = jwtService.extractRoles(token);
-                String tokenType = jwtService.extractTokenType(token);
-                
-                log.debug("JWT token validation successful - Type: {}, User: {}, Roles: {}", 
-                         tokenType, username, roles);
-                
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                        .collect(Collectors.toList());
-                
-                UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(username, null, authorities);
-                
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("JWT authentication successful for user: {} with roles: {}", username, roles);
-            } else if (StringUtils.hasText(token)) {
-                log.warn("JWT token validation failed for request: {}", request.getRequestURI());
+            if (StringUtils.hasText(token)) {
+                if (jwtService.validateToken(token)) {
+                    String username = jwtService.extractUsername(token);
+                    List<String> roles = jwtService.extractRoles(token);
+                    String tokenType = jwtService.extractTokenType(token);
+                    
+                    log.info("JWT token validation successful - Type: {}, User: {}, Roles: {}", 
+                             tokenType, username, roles);
+                    
+                    // Создаем authorities с префиксом ROLE_ для Spring Security
+                    List<SimpleGrantedAuthority> springAuthorities = roles.stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .collect(Collectors.toList());
+                    
+                    log.info("Created Spring authorities: {} for user: {}", springAuthorities, username);
+                    
+                    UsernamePasswordAuthenticationToken authentication = 
+                            new UsernamePasswordAuthenticationToken(username, null, springAuthorities);
+                    
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.info("JWT authentication successful for user: {} with authorities: {} for request: {} {}", 
+                             username, springAuthorities, method, requestURI);
+                } else {
+                    log.warn("JWT token validation failed for request: {} {}", method, requestURI);
+                    SecurityContextHolder.clearContext();
+                }
+            } else {
+                log.debug("No JWT token found for request: {} {}", method, requestURI);
             }
         } catch (Exception e) {
-            log.error("JWT authentication error: {}", e.getMessage());
+            log.error("JWT authentication error for request {} {}: {}", method, requestURI, e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
         
