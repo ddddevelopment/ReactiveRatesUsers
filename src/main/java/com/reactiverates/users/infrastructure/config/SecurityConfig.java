@@ -40,7 +40,6 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/api-docs.yaml").permitAll()
                 .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                 .requestMatchers("/swagger-config", "/api-docs/swagger-config").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
                
                 .requestMatchers("GET", "/api/users").hasAnyRole("USER", "MODERATOR", "ADMIN")
                 .requestMatchers("GET", "/api/users/{id}").hasAnyRole("USER", "MODERATOR", "ADMIN")
