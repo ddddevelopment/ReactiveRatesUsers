@@ -36,14 +36,28 @@ public class SecurityConfig {
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(authz -> authz
-                // Swagger UI и OpenAPI документация - все возможные пути
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/api-docs/**", "/api-docs.yaml").permitAll()
                 .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
                 .requestMatchers("/swagger-config", "/api-docs/swagger-config").permitAll()
-                // H2 Console для разработки
                 .requestMatchers("/h2-console/**").permitAll()
-                // Временно: все API endpoints требуют только аутентификации
+               
+                .requestMatchers("GET", "/api/users").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                .requestMatchers("GET", "/api/users/{id}").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                .requestMatchers("GET", "/api/users/username/{username}").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                .requestMatchers("GET", "/api/users/email/{email}").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                .requestMatchers("GET", "/api/users/role/{role}").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                .requestMatchers("GET", "/api/users/active").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                .requestMatchers("GET", "/api/users/search").hasAnyRole("USER", "MODERATOR", "ADMIN")
+                
+                .requestMatchers("POST", "/api/users").hasAnyRole("MODERATOR", "ADMIN")
+                
+                .requestMatchers("PATCH", "/api/users/{id}/activate").hasAnyRole("MODERATOR", "ADMIN")
+                .requestMatchers("PATCH", "/api/users/{id}/deactivate").hasAnyRole("MODERATOR", "ADMIN")
+                
+                .requestMatchers("PUT", "/api/users/{id}").hasRole("ADMIN")
+                .requestMatchers("DELETE", "/api/users/{id}").hasRole("ADMIN")
+                
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
