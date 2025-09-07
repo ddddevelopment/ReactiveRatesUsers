@@ -3,6 +3,8 @@ package com.reactiverates.users.infrastructure.grpc;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.grpc.server.service.GrpcService;
 
 import com.reactiverates.users.domain.model.User;
@@ -20,6 +22,8 @@ import io.grpc.stub.StreamObserver;
 @GrpcService
 public class UsersGrpcService extends UsersServiceImplBase {
 
+    private static final Logger logger = LoggerFactory.getLogger(UsersGrpcService.class);
+
     private final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE;
     private final UsersService usersService;
 
@@ -29,43 +33,88 @@ public class UsersGrpcService extends UsersServiceImplBase {
 
     @Override
     public void createUser(CreateUserRequest request, StreamObserver<UserResponse> responseObserver) {
-        var userRequest = new com.reactiverates.users.domain.model.CreateUserRequest(
-                request.getUsername(),
-                request.getEmail(),
-                request.getPassword(),
-                request.getFirstName(),
-                request.getLastName(),
-                request.getPhoneNumber(),
-                convertToDomainRole(request.getRole()));
+        logger.debug("gRPC createUser request received for username: {}", request.getUsername());
 
-        UserDto created = usersService.createUser(userRequest);
+        try {
+            var userRequest = new com.reactiverates.users.domain.model.CreateUserRequest(
+                    request.getUsername(),
+                    request.getEmail(),
+                    request.getPassword(),
+                    request.getFirstName(),
+                    request.getLastName(),
+                    request.getPhoneNumber(),
+                    convertToDomainRole(request.getRole()));
 
-        responseObserver.onNext(toUserResponse(created));
-        responseObserver.onCompleted();
+            long startTime = System.currentTimeMillis();
+            UserDto created = usersService.createUser(userRequest);
+            long endTime = System.currentTimeMillis();
+
+            logger.info("gRPC createUser completed successfully for username: {} in {}ms", request.getUsername(), (endTime - startTime));
+            logger.debug("gRPC createUser response: userId={}, email={}", created.id(), created.email());
+
+            responseObserver.onNext(toUserResponse(created));
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            logger.error("gRPC createUser failed for username: {} - Error: {}", request.getUsername(), e.getMessage(), e);
+            responseObserver.onError(io.grpc.Status.INTERNAL
+                    .withDescription("Failed to create user: " + e.getMessage())
+                    .asRuntimeException());
+        }
     }
 
     @Override
     public void getUserById(GetUserByIdRequest request, StreamObserver<UserResponse> responseObserver) {
-        Optional<UserDto> user = usersService.getUserById(request.getUserId());
+        logger.debug("gRPC getUserById request received for userId: {}", request.getUserId());
 
-        if (user.isPresent()) {
-            responseObserver.onNext(toUserResponse(user.get()));
-        } else {
-            responseObserver.onNext(toUserNotFoundResponse("User with ID " + request.getUserId() + " not found"));
+        try {
+            long startTime = System.currentTimeMillis();
+            Optional<UserDto> user = usersService.getUserById(request.getUserId());
+            long endTime = System.currentTimeMillis();
+
+            if (user.isPresent()) {
+                logger.info("gRPC getUserById found user with ID: {} in {}ms", request.getUserId(), (endTime - startTime));
+                logger.debug("gRPC getUserById response: username={}, email={}", user.get().username(), user.get().email());
+                responseObserver.onNext(toUserResponse(user.get()));
+            } else {
+                logger.warn("gRPC getUserById user not found with ID: {}", request.getUserId());
+                responseObserver.onNext(toUserNotFoundResponse("User with ID " + request.getUserId() + " not found"));
+            }
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            logger.error("gRPC getUserById failed for userId: {} - Error: {}", request.getUserId(), e.getMessage(), e);
+            responseObserver.onError(io.grpc.Status.INTERNAL
+                    .withDescription("Failed to get user: " + e.getMessage())
+                    .asRuntimeException());
         }
-        responseObserver.onCompleted();
     }
 
     @Override
     public void getUserByUsername(GetUserByUsernameRequest request, StreamObserver<UserResponse> responseObserver) {
-        Optional<UserDto> user = usersService.getUserByUsername(request.getUsername());
+        logger.debug("gRPC getUserByUsername request received for username: {}", request.getUsername());
 
-        if (user.isPresent()) {
-            responseObserver.onNext(toUserResponse(user.get()));
-        } else {
-            responseObserver.onNext(toUserNotFoundResponse("User with username '" + request.getUsername() + "' not found"));
+        try {
+            long startTime = System.currentTimeMillis();
+            Optional<UserDto> user = usersService.getUserByUsername(request.getUsername());
+            long endTime = System.currentTimeMillis();
+
+            if (user.isPresent()) {
+                logger.info("gRPC getUserByUsername found user with username: {} in {}ms", request.getUsername(), (endTime - startTime));
+                logger.debug("gRPC getUserByUsername response: userId={}, email={}", user.get().id(), user.get().email());
+                responseObserver.onNext(toUserResponse(user.get()));
+            } else {
+                logger.warn("gRPC getUserByUsername user not found with username: {}", request.getUsername());
+                responseObserver.onNext(toUserNotFoundResponse("User with username '" + request.getUsername() + "' not found"));
+            }
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            logger.error("gRPC getUserByUsername failed for username: {} - Error: {}", request.getUsername(), e.getMessage(), e);
+            responseObserver.onError(io.grpc.Status.INTERNAL
+                    .withDescription("Failed to get user: " + e.getMessage())
+                    .asRuntimeException());
         }
-        responseObserver.onCompleted();
     }
 
     private User.UserRole convertToDomainRole(com.reactiverates.users.grpc.UserRole role) {

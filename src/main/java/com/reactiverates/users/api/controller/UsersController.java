@@ -22,13 +22,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Пользователи", description = "API для управления пользователями")
 @Slf4j
 public class UsersController {
@@ -48,9 +49,18 @@ public class UsersController {
             @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
     })
     public ResponseEntity<List<UserDto>> getAllUsers() {
-        log.info("Getting all users");
-        List<UserDto> users = service.getAllUsers();
-        return ResponseEntity.ok(users);
+        log.debug("HTTP GET /api/users - Getting all users");
+        long startTime = System.currentTimeMillis();
+        try {
+            List<UserDto> users = service.getAllUsers();
+            long endTime = System.currentTimeMillis();
+            log.info("HTTP GET /api/users - Retrieved {} users in {}ms", users.size(), (endTime - startTime));
+            log.debug("HTTP GET /api/users - Response contains {} users", users.size());
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            log.error("HTTP GET /api/users - Error getting all users: {}", e.getMessage(), e);
+            throw e;
+        }
     }
     
     @GetMapping("/{id}")
@@ -69,10 +79,24 @@ public class UsersController {
     public ResponseEntity<UserDto> getUserById(
             @Parameter(description = "ID пользователя", example = "1")
             @PathVariable Long id) {
-        log.info("Getting user by ID: {}", id);
-        Optional<UserDto> user = service.getUserById(id);
-        return user.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        log.debug("HTTP GET /api/users/{} - Getting user by ID", id);
+        long startTime = System.currentTimeMillis();
+        try {
+            Optional<UserDto> user = service.getUserById(id);
+            long endTime = System.currentTimeMillis();
+
+            if (user.isPresent()) {
+                log.info("HTTP GET /api/users/{} - User found in {}ms", id, (endTime - startTime));
+                log.debug("HTTP GET /api/users/{} - User: username={}, email={}", id, user.get().username(), user.get().email());
+                return ResponseEntity.ok(user.get());
+            } else {
+                log.warn("HTTP GET /api/users/{} - User not found", id);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("HTTP GET /api/users/{} - Error getting user: {}", id, e.getMessage(), e);
+            throw e;
+        }
     }
     
     @GetMapping("/username/{username}")
@@ -193,12 +217,16 @@ public class UsersController {
     public ResponseEntity<UserDto> createUser(
             @Parameter(description = "Данные для создания пользователя")
             @Valid @RequestBody CreateUserRequest request) {
-        log.info("Creating new user with username: {}", request.username());
+        log.debug("HTTP POST /api/users - Creating new user with username: {}, email: {}", request.username(), request.email());
+        long startTime = System.currentTimeMillis();
         try {
             UserDto createdUser = service.createUser(request);
+            long endTime = System.currentTimeMillis();
+            log.info("HTTP POST /api/users - User created successfully with ID: {} in {}ms", createdUser.id(), (endTime - startTime));
+            log.debug("HTTP POST /api/users - Created user: username={}, email={}, role={}", createdUser.username(), createdUser.email(), createdUser.role());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (RuntimeException e) {
-            log.error("Error creating user: {}", e.getMessage());
+            log.error("HTTP POST /api/users - Error creating user with username: {} - {}", request.username(), e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }

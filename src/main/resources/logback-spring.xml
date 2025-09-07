@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Include Spring Boot's default configuration -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Console appender with colored output -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){blue} %clr(%-5level) %clr(%logger{36}){cyan} - %clr(%msg){green}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Console appender for SQL logs -->
+    <appender name="SQL_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([SQL]){magenta} %clr(%-5level) %clr(%logger{36}){cyan} - %clr(%msg){yellow}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- HTTP Request/Response logger -->
+    <appender name="HTTP_LOGGER" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([HTTP]){red} %clr(%-5level) %clr(%logger{36}){cyan} - %clr(%msg){green}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- gRPC logger -->
+    <appender name="GRPC_LOGGER" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([gRPC]){blue} %clr(%-5level) %clr(%logger{36}){cyan} - %clr(%msg){green}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Default logging level -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- Application specific loggers -->
+    <logger name="com.reactiverates.users" level="TRACE" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="com.reactiverates" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Spring framework loggers -->
+    <logger name="org.springframework" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="org.springframework.web" level="DEBUG" additivity="false">
+        <appender-ref ref="HTTP_LOGGER"/>
+    </logger>
+
+    <logger name="org.springframework.web.servlet" level="DEBUG" additivity="false">
+        <appender-ref ref="HTTP_LOGGER"/>
+    </logger>
+
+    <logger name="org.springframework.web.filter" level="DEBUG" additivity="false">
+        <appender-ref ref="HTTP_LOGGER"/>
+    </logger>
+
+    <logger name="org.springframework.security" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Database and JPA loggers -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="SQL_CONSOLE"/>
+    </logger>
+
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+        <appender-ref ref="SQL_CONSOLE"/>
+    </logger>
+
+    <logger name="org.springframework.orm.jpa" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="org.springframework.jdbc" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- gRPC loggers -->
+    <logger name="io.grpc" level="DEBUG" additivity="false">
+        <appender-ref ref="GRPC_LOGGER"/>
+    </logger>
+
+    <logger name="io.grpc.netty" level="DEBUG" additivity="false">
+        <appender-ref ref="GRPC_LOGGER"/>
+    </logger>
+
+    <logger name="net.devh.boot.grpc" level="DEBUG" additivity="false">
+        <appender-ref ref="GRPC_LOGGER"/>
+    </logger>
+
+    <!-- Eureka loggers -->
+    <logger name="com.netflix.discovery" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="com.netflix.eureka" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Configuration loggers -->
+    <logger name="org.springframework.cloud.config" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <logger name="org.springframework.cloud.context" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Development profile specific configuration -->
+    <springProfile name="dev,default">
+        <!-- Enable more detailed logging for development -->
+        <logger name="org.springframework.web.client" level="DEBUG" additivity="false">
+            <appender-ref ref="HTTP_LOGGER"/>
+        </logger>
+
+        <logger name="org.apache.http" level="DEBUG" additivity="false">
+            <appender-ref ref="HTTP_LOGGER"/>
+        </logger>
+    </springProfile>
+
+    <!-- Production profile configuration -->
+    <springProfile name="prod">
+        <!-- Reduce verbose logging in production -->
+        <logger name="org.springframework" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+
+        <logger name="com.reactiverates.users" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+    </springProfile>
+
+</configuration>

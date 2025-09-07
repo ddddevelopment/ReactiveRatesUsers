@@ -10,11 +10,24 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
 @Configuration
 public class OpenApiConfig {
+
+    @Value("${openapi.server.dev.url}")
+    private String devUrl;
+
+    @Value("${openapi.server.dev.description}")
+    private String devDescription;
+
+    @Value("${openapi.server.prod.url}")
+    private String prodUrl;
+
+    @Value("${openapi.server.prod.description}")
+    private String prodDescription;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -35,11 +48,11 @@ public class OpenApiConfig {
                                 .url("https://opensource.org/licenses/MIT")))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:8080")
-                                .description("Локальная среда разработки"),
+                                .url(devUrl)
+                                .description(devDescription),
                         new Server()
-                                .url("https://api.reactiverates.com")
-                                .description("Продакшн сервер")
+                                .url(prodUrl)
+                                .description(prodDescription)
                 ))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
